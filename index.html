@@ -5,208 +5,571 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Smart Lunch Gate Pass - GPS Verification</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; -webkit-tap-highlight-color: transparent; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #2c3e50; }
-        label { font-weight: bold; display: block; margin-top: 10px; color: #34495e; }
-        input, select, button { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; appearance: none; }
-        button { background-color: #27ae60; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 15px; touch-action: manipulation; }
-        button:active { background-color: #1e7e34; }
-        .card { background: #fdfefe; border: 1px solid #e2e8f0; padding: 15px; margin-top: 15px; border-radius: 8px; position: relative; }
-        .timer { font-size: 24px; font-weight: bold; color: #2980b9; float: right; }
-        .timeout { color: #c0392b !important; animation: blink 1s infinite; }
-        .info-text { display: inline-block; width: 70%; }
-        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-top: 5px; }
-        .status-outside { background-color: #ffeaa7; color: #d63031; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container { 
+            max-width: 700px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 { 
+            text-align: center; 
+            color: #2c3e50; 
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            font-weight: bold; 
+            display: block; 
+            margin-bottom: 8px; 
+            color: #34495e;
+            font-size: 14px;
+        }
+        input, select { 
+            width: 100%; 
+            padding: 14px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 8px; 
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        button { 
+            flex: 1;
+            padding: 14px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        #btnSubmit { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        #btnSubmit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        #btnSubmit:active {
+            transform: translateY(0);
+        }
+        .gps-status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            display: none;
+        }
+        .gps-status.active {
+            display: block;
+        }
+        .gps-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .gps-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .gps-status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
         
-        /* Modal UI ป้องกัน iOS บล็อคระบบแจ้งเตือน */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-        .modal-content { background: white; padding: 25px; border-radius: 16px; max-width: 450px; width: 100%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .modal-btn-group { display: flex; gap: 12px; margin-top: 20px; }
-        .btn-blue { background-color: #3498db; margin: 0; }
-        .btn-red { background-color: #e74c3c; margin: 0; }
-        .btn-close { background-color: #7f8c8d; display: none; margin-top: 20px; }
-        
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        /* Card List */
+        h2 { 
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+        .card { 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-left: 5px solid #667eea;
+            padding: 20px; 
+            margin-bottom: 15px; 
+            border-radius: 8px;
+            position: relative;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .timer { 
+            font-size: 32px; 
+            font-weight: bold; 
+            color: #667eea;
+        }
+        .timer.warning {
+            color: #ff9800;
+            animation: pulse 1s infinite;
+        }
+        .timer.danger {
+            color: #d32f2f;
+            animation: pulse 0.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .card-info {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .card-info strong {
+            color: #2c3e50;
+        }
+        .status-badge { 
+            display: inline-block; 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 12px; 
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        .status-outside { 
+            background-color: #fff3cd; 
+            color: #856404;
+        }
+        .status-inside {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-timeout {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .card-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .btn-gps {
+            flex: 1;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-gps:hover {
+            background: #764ba2;
+        }
+        .btn-delete {
+            padding: 10px 15px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .empty-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 16px;
+        }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.7); 
+            z-index: 9999; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 16px; 
+            max-width: 450px; 
+            width: 100%; 
+            text-align: center; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .modal-content p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .modal-btn-group { 
+            display: flex; 
+            gap: 12px; 
+            margin-top: 20px;
+        }
+        .modal-btn-group button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #388e3c;
+        }
+        .btn-danger {
+            background: #d32f2f;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #b71c1c;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⏱️ ระบบบันทึกเวลาออกและนับถอยหลัง (ตรวจสอบ GPS)</h2>
+    <h1>⏱️ ระบบบันทึกเวลาออกและตรวจสอบ GPS</h1>
     
-    <label>ชื่อ-นามสกุล:</label>
-    <input type="text" id="name" placeholder="ชื่อ นักเรียน">
+    <div id="gpsStatus" class="gps-status"></div>
+    
+    <div class="form-group">
+        <label>ชื่อ-นามสกุล:</label>
+        <input type="text" id="name" placeholder="ชื่อ นักเรียน">
+    </div>
 
-    <label>เลขทะเบียนรถ:</label>
-    <input type="text" id="plate" placeholder="เช่น 1กข 1234">
+    <div class="form-group">
+        <label>เลขทะเบียนรถ:</label>
+        <input type="text" id="plate" placeholder="เช่น 1กข 1234">
+    </div>
 
-    <label>เบอร์โทรศัพท์:</label>
-    <input type="text" id="phone" placeholder="08xxxxxxxx">
+    <div class="form-group">
+        <label>เบอร์โทรศัพท์:</label>
+        <input type="text" id="phone" placeholder="08xxxxxxxx">
+    </div>
 
-    <label>ระยะเวลาที่อนุญาต (นาที):</label>
-    <select id="duration">
-        <option value="30">30 นาที</option>
-        <option value="45">45 นาที</option>
-        <option value="50" selected>50 นาที (แนะนำสำหรับพักเที่ยง)</option>
-        <option value="60">60 นาที</option>
-    </select>
+    <div class="form-group">
+        <label>ระยะเวลาที่อนุญาต (นาที):</label>
+        <select id="duration">
+            <option value="30">30 นาที</option>
+            <option value="45">45 นาที</option>
+            <option value="50" selected>50 นาที (พักเที่ยง)</option>
+            <option value="60">60 นาที</option>
+        </select>
+    </div>
 
-    <button id="btnSubmit">บันทึกเวลาออกและเริ่มนับถอยหลัง</button>
+    <div class="btn-group">
+        <button id="btnSubmit">📍 บันทึกเวลาออก</button>
+    </div>
 
-    <h3>📊 รายการรถที่อยู่ระหว่างพักเที่ยง</h3>
-    <div id="list-container"></div>
+    <h2>📊 รายการรถที่อยู่ระหว่างพักเที่ยง</h2>
+    <div id="list-container">
+        <div class="empty-message">ยังไม่มีรถออกเที่ยง</div>
+    </div>
 </div>
 
-<!-- หน้าต่างจำลองสถานการณ์พิกัด GPS -->
+<!-- GPS Verification Modal -->
 <div id="gpsModal" class="modal">
     <div class="modal-content">
-        <h3 id="modalTitle" style="margin-top:0; color:#2c3e50;">🔮 ตรวจสอบพิกัด GPS</h3>
-        <p id="modalText" style="color:#7f8c8d; font-size:16px; line-height: 1.5;"></p>
-        <div id="modalActionButtons" class="modal-btn-group">
-            <button class="btn-blue" id="btnSuccess">ตกลง (อยู่ในวิทยาลัย)</button>
-            <button class="btn-red" id="btnFail">ยกเลิก (อยู่ข้างนอก)</button>
+        <h3 id="modalTitle">🔍 ตรวจสอบตำแหน่ง GPS</h3>
+        <p id="modalText"></p>
+        <div id="modalCoords" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 14px; text-align: left; max-height: 200px; overflow-y: auto;">
         </div>
-        <button class="btn-close" id="btnCloseModal">ปิดหน้าต่างนี้</button>
+        <div id="modalActionButtons" class="modal-btn-group">
+            <button class="btn-success" id="btnConfirm">✅ ยืนยัน</button>
+            <button class="btn-danger" id="btnCancel">❌ ปิด</button>
+        </div>
     </div>
 </div>
 
 <script>
-    let currentActiveId = null;
-    let currentActivePlate = '';
-    let currentActiveName = '';
+    // โซนปลอดภัย (สามารถปรับพิกัดได้)
+    const SAFE_ZONE = {
+        latitude: 13.7563,   // พิกัดตัวอย่าง
+        longitude: 100.5018,
+        radius: 100          // เมตร
+    };
 
-    document.getElementById('btnSubmit').addEventListener('click', function(e) {
-        e.preventDefault();
-        startGaTePass();
-    });
+    let vehicleList = JSON.parse(localStorage.getItem('vehicleList')) || [];
+    let currentCheckingId = null;
+    let currentGpsData = null;
 
-    function startGaTePass() {
+    // เริ่มต้น
+    document.getElementById('btnSubmit').addEventListener('click', startCheckout);
+
+    function startCheckout() {
         let name = document.getElementById('name').value.trim();
         let plate = document.getElementById('plate').value.trim();
         let phone = document.getElementById('phone').value.trim();
         let duration = parseInt(document.getElementById('duration').value);
 
-        if(!name || !plate || !phone) {
-            alert('กรุณากรอกข้อมูลให้ครบถ้วนครับ!');
+        if (!name || !plate || !phone) {
+            showGpsStatus('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
             return;
         }
 
-        let totalSeconds = duration * 60;
         let id = Date.now();
+        let vehicle = {
+            id: id,
+            name: name,
+            plate: plate,
+            phone: phone,
+            duration: duration,
+            startTime: Date.now(),
+            status: 'outside', // outside, inside, timeout
+            gpsData: null
+        };
 
-        let card = document.createElement('div');
-        card.className = 'card';
-        card.id = 'card-' + id;
-        
-        card.innerHTML = `
-            <div class="timer" id="timer-${id}">${duration}:00</div>
-            <div class="info-text">
-                <strong>ทะเบียน:</strong> ${plate} <br>
-                <strong>ชื่อ:</strong> ${name} | <strong>โทร:</strong> ${phone}<br>
-                <span class="status-badge status-outside" id="badge-${id}">📍 สถานะ: อยู่ข้างนอกสถาบัน</span>
-            </div>
-            <button class="gps-check-btn" 
-                    data-id="${id}" 
-                    data-plate="${plate}" 
-                    data-name="${name}" 
-                    style="background-color:#3498db; margin-top:10px; padding:10px;">
-                กลับเข้าสถาบันแล้ว (ยืนยันพิกัด GPS)
-            </button>
-        `;
+        vehicleList.push(vehicle);
+        saveVehicleList();
+        renderList();
 
-        document.getElementById('list-container').appendChild(card);
-
+        // Clear form
         document.getElementById('name').value = '';
         document.getElementById('plate').value = '';
         document.getElementById('phone').value = '';
 
-        let countdown = setInterval(function() {
-            totalSeconds--;
-            let mins = Math.floor(totalSeconds / 60);
-            let secs = totalSeconds % 60;
+        showGpsStatus('✅ บันทึกเวลาออกสำเร็จ', 'success');
+    }
+
+    function renderList() {
+        const container = document.getElementById('list-container');
+        
+        if (vehicleList.length === 0) {
+            container.innerHTML = '<div class="empty-message">ยังไม่มีรถออกเที่ยง</div>';
+            return;
+        }
+
+        container.innerHTML = vehicleList.map(vehicle => {
+            const elapsed = Date.now() - vehicle.startTime;
+            const total = vehicle.duration * 60 * 1000;
+            const remaining = Math.max(0, total - elapsed);
             
-            let displayMins = mins < 10 ? '0' + mins : mins;
-            let displaySecs = secs < 10 ? '0' + secs : secs;
-            
-            let timerElement = document.getElementById(`timer-${id}`);
-            
-            if (timerElement) {
-                timerElement.innerText = displayMins + ':' + displaySecs;
-                
-                if (totalSeconds <= 0) {
-                    clearInterval(countdown);
-                    timerElement.innerText = "หมดเวลา!";
-                    timerElement.classList.add('timeout');
-                    document.getElementById('card-' + id).style.backgroundColor = '#fdedec';
-                }
-            } else {
-                clearInterval(countdown); 
+            let mins = Math.floor(remaining / 60000);
+            let secs = Math.floor((remaining % 60000) / 1000);
+            let timeDisplay = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+            let timerClass = '';
+            if (remaining <= 0) {
+                timerClass = 'danger';
+                vehicle.status = 'timeout';
+            } else if (remaining <= 300000) { // 5 minutes
+                timerClass = 'warning';
             }
-        }, 1000);
+
+            let statusBadge = '';
+            if (vehicle.status === 'inside') {
+                statusBadge = '<span class="status-badge status-inside">✅ อยู่ในสถาบัน</span>';
+            } else if (vehicle.status === 'timeout') {
+                statusBadge = '<span class="status-badge status-timeout">⏰ หมดเวลา</span>';
+            } else {
+                statusBadge = '<span class="status-badge status-outside">📍 อยู่นอกสถาบัน</span>';
+            }
+
+            return `
+                <div class="card">
+                    <div class="card-header">
+                        <span>🚗 ${vehicle.plate}</span>
+                        <span class="timer ${timerClass}">${timeDisplay}</span>
+                    </div>
+                    <div class="card-info">
+                        <strong>ชื่อ:</strong> ${vehicle.name} | <strong>โทร:</strong> ${vehicle.phone}
+                    </div>
+                    ${statusBadge}
+                    <div class="card-buttons">
+                        <button class="btn-gps" onclick="checkGPS(${vehicle.id})">🔍 ตรวจสอบ GPS</button>
+                        <button class="btn-delete" onclick="deleteVehicle(${vehicle.id})">🗑️ ลบ</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Update timers
+        vehicleList.forEach(v => {
+            if (v.status !== 'timeout') {
+                const elapsed = Date.now() - v.startTime;
+                const total = v.duration * 60 * 1000;
+                if (elapsed >= total) {
+                    v.status = 'timeout';
+                }
+            }
+        });
+        saveVehicleList();
     }
 
-    // แก้ไขบั๊กปุ่มกดไม่ติดบน iOS ด้วย Event Delegation
-    document.getElementById('list-container').addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('gps-check-btn')) {
-            e.preventDefault();
-            
-            let id = e.target.getAttribute('data-id');
-            let plate = e.target.getAttribute('data-plate');
-            let name = e.target.getAttribute('data-name');
-            
-            openGPSModal(id, plate, name);
+    function checkGPS(vehicleId) {
+        currentCheckingId = vehicleId;
+        showGpsStatus('🔍 ได้รับสัญญาณ GPS...', 'loading');
+        
+        // Request GPS permission
+        if (!navigator.geolocation) {
+            showGpsStatus('❌ อุปกรณ์นี้ไม่สนับสนุน GPS', 'error');
+            return;
         }
-    });
 
-    function openGPSModal(id, plate, name) {
-        currentActiveId = id;
-        currentActivePlate = plate;
-        currentActiveName = name;
-        
-        document.getElementById('modalTitle').innerText = "🔮 ตรวจสอบพิกัด GPS (iOS Mode)";
-        document.getElementById('modalText').innerText = `ระบบกำลังตรวจสอบพิกัดของรถทะเบียน ${plate} (${name})\nกรุณาเลือกสถานการณ์จำลองเพื่อทดสอบระบบ:`;
-        
-        document.getElementById('modalActionButtons').style.display = 'flex';
-        document.getElementById('btnCloseModal').style.display = 'none';
-        document.getElementById('gpsModal').style.display = 'flex';
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                currentGpsData = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    timestamp: new Date().toLocaleString('th-TH')
+                };
+
+                let distance = calculateDistance(
+                    currentGpsData.latitude,
+                    currentGpsData.longitude,
+                    SAFE_ZONE.latitude,
+                    SAFE_ZONE.longitude
+                );
+
+                let vehicle = vehicleList.find(v => v.id === vehicleId);
+                if (vehicle) {
+                    vehicle.gpsData = currentGpsData;
+                }
+
+                openGpsModal(vehicleId, distance);
+                showGpsStatus('✅ ได้รับสัญญาณ GPS สำเร็จ', 'success');
+            },
+            (error) => {
+                showGpsStatus('❌ ไม่สามารถได้รับสัญญาณ GPS: ' + error.message, 'error');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
     }
 
-    document.getElementById('btnSuccess').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('modalTitle').innerText = "✅ ตรวจสอบพิกัดสำเร็จ!";
-        document.getElementById('modalText').innerText = `นักเรียนอยู่ภายในพื้นที่สถาบันเรียบร้อยแล้ว (ระยะห่างปัจจุบัน 12 เมตร)\n\nทำการเคลียร์รายชื่อออกจากหน้าจอมอนิเตอร์สำเร็จ`;
-        
-        document.getElementById('modalActionButtons').style.display = 'none';
-        document.getElementById('btnCloseModal').style.display = 'block';
-        
-        let element = document.getElementById('card-' + currentActiveId);
-        if (element) element.remove();
-    });
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c * 1000; // Convert to meters
+    }
 
-    document.getElementById('btnFail').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('modalTitle').innerText = "❌ ปฏิเสธการบันทึกเวลา!";
-        document.getElementById('modalText').innerText = `⚠️ แจ้งเตือนทุจริต: ระบบตรวจพบพิกัดว่ารถทะเบียน ${currentActivePlate} อยู่ห่างจากสถาบันถึง 450 เมตร!\n\nระบบล็อกการทำงานและปฏิเสธขากลับจนกว่าจะเข้าพื้นที่จริง`;
+    function openGpsModal(vehicleId, distance) {
+        let vehicle = vehicleList.find(v => v.id === vehicleId);
+        let isInside = distance <= SAFE_ZONE.radius;
+
+        document.getElementById('modalTitle').textContent = isInside ? '✅ อยู่ในสถาบัน' : '❌ อยู่นอกสถาบัน';
         
-        document.getElementById('modalActionButtons').style.display = 'none';
-        document.getElementById('btnCloseModal').style.display = 'block';
+        let message = isInside 
+            ? `นักเรียนอยู่ในเขตสถาบัน (ระยะห่าง ${distance.toFixed(2)} เมตร)`
+            : `⚠️ นักเรียนอยู่นอกเขตสถาบัน (ระยะห่าง ${distance.toFixed(2)} เมตร)`;
         
-        let cardElement = document.getElementById('card-' + currentActiveId);
-        if (cardElement) cardElement.style.backgroundColor = '#ffeaa7';
+        document.getElementById('modalText').textContent = message;
         
-        let badgeElement = document.getElementById('badge-' + currentActiveId);
-        if (badgeElement) {
-            badgeElement.innerText = "🚨 พิกัดทุจริต: อยู่ข้างนอก!";
-            badgeElement.style.backgroundColor = '#d63031';
-            badgeElement.style.color = 'white';
+        let coordsHtml = `
+            <div><strong>พิกัดปัจจุบัน:</strong><br>
+            Lat: ${currentGpsData.latitude.toFixed(6)}<br>
+            Lon: ${currentGpsData.longitude.toFixed(6)}<br>
+            ความแม่นยำ: ±${currentGpsData.accuracy.toFixed(2)}m</div>
+            <br>
+            <div><strong>โซนปลอดภัย:</strong><br>
+            Lat: ${SAFE_ZONE.latitude.toFixed(6)}<br>
+            Lon: ${SAFE_ZONE.longitude.toFixed(6)}<br>
+            รัศมี: ${SAFE_ZONE.radius}m</div>
+            <br>
+            <div><strong>เวลา:</strong> ${currentGpsData.timestamp}</div>
+        `;
+        
+        document.getElementById('modalCoords').innerHTML = coordsHtml;
+
+        if (isInside && vehicle) {
+            vehicle.status = 'inside';
         }
-    });
 
-    document.getElementById('btnCloseModal').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('gpsModal').style.display = 'none';
-    });
+        document.getElementById('btnConfirm').onclick = () => {
+            saveVehicleList();
+            renderList();
+            document.getElementById('gpsModal').classList.remove('active');
+            showGpsStatus('✅ บันทึก GPS สำเร็จ', 'success');
+        };
+
+        document.getElementById('btnCancel').onclick = () => {
+            document.getElementById('gpsModal').classList.remove('active');
+        };
+
+        document.getElementById('gpsModal').classList.add('active');
+    }
+
+    function deleteVehicle(vehicleId) {
+        if (confirm('ต้องการลบข้อมูลนี้ใช่หรือไม่?')) {
+            vehicleList = vehicleList.filter(v => v.id !== vehicleId);
+            saveVehicleList();
+            renderList();
+            showGpsStatus('✅ ลบข้อมูลสำเร็จ', 'success');
+        }
+    }
+
+    function saveVehicleList() {
+        localStorage.setItem('vehicleList', JSON.stringify(vehicleList));
+    }
+
+    function showGpsStatus(message, type) {
+        const statusEl = document.getElementById('gpsStatus');
+        statusEl.textContent = message;
+        statusEl.className = `gps-status active ${type}`;
+        setTimeout(() => {
+            statusEl.classList.remove('active');
+        }, 4000);
+    }
+
+    // Update timer every second
+    setInterval(() => {
+        renderList();
+    }, 1000);
+
+    // Initial render
+    renderList();
 </script>
 
 </body>
